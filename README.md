@@ -1,4 +1,4 @@
-# jjbic
+# inventorymanagement
 
 A new Flutter project.
 

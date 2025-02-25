@@ -1,1 +1,0 @@
-@rpath/jjbic.debug.dylib
