@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'item_screen.dart';
 import 'package:inventorymanagement/utilities.dart';
 import 'item_sheet.dart';
 
