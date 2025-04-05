@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'item_screen.dart';
 import 'package:inventorymanagement/utilities.dart';
+import 'item_sheet.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -81,28 +82,53 @@ class ListScreenState extends State<ListScreen> {
           mainAxisSpacing: 16, // space between rows
           childAspectRatio: 1, // adjust this ratio for card size
         ),
-        itemCount: lists.length,
-        itemBuilder: (context, index) => Card(
-          color: Color.fromARGB(255, 36, 36, 36),
-          child: ListTile(
-            title: Text(
-              lists[index],
-              style: openSansStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
-            ),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ItemScreen(listName: lists[index]),
+        itemCount: lists.length + 1, 
+        itemBuilder: (context, index) {
+          if (index == lists.length) {
+            // This is the tile for adding a new list
+            return GestureDetector(
+              onTap: _createNewList, // Show the dialog when this tile is tapped
+              child: Card(
+                color: Color.fromARGB(255, 122, 187, 94),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add, color: Colors.white, size: 30),
+                      SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+          
+          // Regular list tile
+          return Card(
+            color: Color.fromARGB(255, 36, 36, 36),
+            child: ListTile(
+              title: Text(
+                lists[index],
+                style: openSansStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => DraggableScrollableSheet(
+                  expand: false,
+                  initialChildSize: 0.95,
+                  maxChildSize: 0.95,
+                  minChildSize: 0.5,
+                  builder: (_, controller) => ItemSheet(
+                    listName: lists[index],
+                    scrollController: controller,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Color.fromARGB(255, 122, 187, 94),
-        elevation: 0,
-        onPressed: _createNewList,
-        child: Icon(Icons.add, color: Colors.white),        
+          );
+        },
       ),
     );
   }
