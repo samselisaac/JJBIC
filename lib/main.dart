@@ -20,7 +20,7 @@ class InventoryApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Inventory App',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color.fromARGB(255, 26, 26, 26),
+        scaffoldBackgroundColor: Colors.black,
       ),
       
       home: ListScreen(),

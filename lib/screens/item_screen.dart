@@ -45,19 +45,19 @@ class ItemScreenState extends State<ItemScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Add Item', style: montserratStyle(fontSize: 22, color: Colors.black)),
+        title: Text('Add Item', style: openSansStyle(fontSize: 22, color: Colors.black)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: itemController,
               decoration: InputDecoration(hintText: 'Item Name'),
-              style: montserratStyle(color: Colors.grey),
+              style: openSansStyle(color: Colors.grey),
             ),
             TextField(
               controller: quantityController,
               decoration: InputDecoration(hintText: 'Quantity'),
-              style: montserratStyle(color: Colors.grey),
+              style: openSansStyle(color: Colors.grey),
               keyboardType: TextInputType.number,
             ),
           ],
@@ -76,7 +76,7 @@ class ItemScreenState extends State<ItemScreen> {
                 Navigator.pop(context);
               }
             },
-            child: Text('Add', style: montserratStyle(color: Colors.deepPurple)),
+            child: Text('Add', style: openSansStyle(color: Colors.deepPurple)),
           ),
         ],
       ),
@@ -90,15 +90,23 @@ class ItemScreenState extends State<ItemScreen> {
     _saveItems();
   }
 
+  void _deleteItem(int index) {
+    setState(() {
+      items.removeAt(index);
+    });
+    _saveItems();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color.fromARGB(255, 36, 36, 36),
       appBar: AppBar(
         title: Text(
           widget.listName,
-          style: montserratStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600),
+          style: openSansStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600),
         ),
-        backgroundColor: const Color.fromARGB(255, 26, 26, 26),
+        backgroundColor: Color.fromARGB(255, 36, 36, 36),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -106,37 +114,76 @@ class ItemScreenState extends State<ItemScreen> {
       ),
       body: ListView.builder(
         itemCount: items.length,
-        itemBuilder: (context, index) => Card(
-          color: Colors.blueGrey,
-          margin: EdgeInsets.all(8),
-          child: ListTile(
-            title: Text(
-              items[index]['name'],
-              style: montserratStyle(color: Colors.white),
-            ),
-            subtitle: Text(
-              'Quantity: ${items[index]['quantity']}',
-              style: montserratStyle(color: Colors.white),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.remove, color: Colors.white),
-                  onPressed: () => _updateQuantity(index, -1),
+        itemBuilder: (context, index) {
+          return Column(
+            children: [
+              ListTile(
+                title: Text(
+                  items[index]['name'],
+                  style: openSansStyle(color: Colors.white),
                 ),
-                IconButton(
-                  icon: Icon(Icons.add, color: Colors.white),
-                  onPressed: () => _updateQuantity(index, 1),
+                subtitle: Text(
+                  'Quantity: ${items[index]['quantity']}',
+                  style: openSansStyle(color: Colors.white),
                 ),
-              ],
-            ),
-          ),
-        ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.remove, color: Colors.white),
+                      onPressed: () => _updateQuantity(index, -1),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add, color: Colors.white),
+                      onPressed: () => _updateQuantity(index, 1),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.white),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Delete Item', style: openSansStyle(fontSize: 20, color: Colors.black)),
+                            content: Text(
+                              'Are you sure you want to delete "${items[index]['name']}"?',
+                              style: openSansStyle(color: Colors.black87),
+                            ),
+                            actions: [
+                              TextButton(
+                                child: Text('Cancel', style: openSansStyle(color: Colors.grey)),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              TextButton(
+                                child: Text('Delete', style: openSansStyle(color: Colors.red)),
+                                onPressed: () {
+                                Navigator.pop(context);
+                                _deleteItem(index);
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Divider(
+                color: Color.fromARGB(255, 50, 50, 50), 
+                thickness: 0.8, 
+                height: 1, 
+                indent: 20,
+                endIndent: 20,
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.green,
+        elevation: 0,
         onPressed: _addItem,
-        child: Icon(Icons.add),
+        child: Icon(Icons.add, color: Colors.white),
       ),
     );
   }

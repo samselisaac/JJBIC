@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'item_screen.dart';
-import 'package:inventorymanagement/utilities.dart'; // assuming montserratStyle is defined here
+import 'package:inventorymanagement/utilities.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -12,7 +12,7 @@ class ListScreen extends StatefulWidget {
 
 class ListScreenState extends State<ListScreen> {
   List<String> lists = [];
-
+  
   @override
   void initState() {
     super.initState();
@@ -37,11 +37,11 @@ class ListScreenState extends State<ListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Create New List',
-            style: montserratStyle(fontSize: 22, color: Colors.black)),
+            style: openSansStyle(fontSize: 22, color: Colors.black)),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(hintText: 'List Name'),
-          style: montserratStyle(color: Colors.grey),
+          style: openSansStyle(color: Colors.grey),
         ),
         actions: [
           TextButton(
@@ -53,7 +53,7 @@ class ListScreenState extends State<ListScreen> {
               }
             },
             child: Text('Add',
-                style: montserratStyle(color: Colors.deepPurple)),
+                style: openSansStyle(color: Colors.deepPurple)),
           ),
         ],
       ),
@@ -67,22 +67,27 @@ class ListScreenState extends State<ListScreen> {
         preferredSize: Size.fromHeight(60),
         child: AppBar(
           title: Text(
-            '\nYour Lists',
-            style: montserratStyle(
-                fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600),
+            '\n  Your Lists',
+            style: openSansStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w700),
           ),
-          backgroundColor: const Color.fromARGB(255, 26, 26, 26),
+          backgroundColor: Colors.black,
         ),
       ),
-      body: ListView.builder(
+      body: GridView.builder(
+        padding: EdgeInsets.all(16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, // 2 cards per row
+          crossAxisSpacing: 16, // space between columns
+          mainAxisSpacing: 16, // space between rows
+          childAspectRatio: 1, // adjust this ratio for card size
+        ),
         itemCount: lists.length,
         itemBuilder: (context, index) => Card(
-          color: Colors.blueGrey,
-          margin: EdgeInsets.all(8),
+          color: Color.fromARGB(255, 36, 36, 36),
           child: ListTile(
             title: Text(
               lists[index],
-              style: montserratStyle(fontSize: 18, color: Colors.white),
+              style: openSansStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
             ),
             onTap: () => Navigator.push(
               context,
@@ -94,8 +99,10 @@ class ListScreenState extends State<ListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Color.fromARGB(255, 122, 187, 94),
+        elevation: 0,
         onPressed: _createNewList,
-        child: Icon(Icons.add),
+        child: Icon(Icons.add, color: Colors.white),        
       ),
     );
   }
