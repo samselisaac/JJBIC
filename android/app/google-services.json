@@ -13,7 +13,20 @@
           "package_name": "com.jjbic.inventorymanagement"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "477598499756-798lrpfp75llf97d2ltmvutop7j58sbu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jjbic.inventorymanagement",
+            "certificate_hash": "b9dfd3b677371f860f4cb194ed09dba980847da1"
+          }
+        },
+        {
+          "client_id": "477598499756-33n4itku82oqjeot8g3nl84mk49c07tc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCUuutQuJtam1O1SHQSmQmDE5tRJahao-c"
@@ -21,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "477598499756-33n4itku82oqjeot8g3nl84mk49c07tc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "477598499756-ajrev60j6op98spihkhoceser3o8ud9m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jjbic.inventorymanagement"
+              }
+            }
+          ]
         }
       }
     }
