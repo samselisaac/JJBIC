@@ -1,0 +1,24 @@
+# Flutter core
+-keep class io.flutter.** { *; }
+-keep class io.flutter.plugins.** { *; }
+
+# Firebase (if used)
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
+# JNI (native methods)
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Logging optimization (optional)
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
+}
+
+# Prevent model class obfuscation (replace with your actual package name)
+-keep class com.jjbic.inventorymanagement** { *; }
