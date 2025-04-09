@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/list_screen.dart';
+import 'screens/lists_overview_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
