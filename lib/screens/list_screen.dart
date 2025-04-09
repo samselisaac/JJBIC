@@ -28,6 +28,8 @@ class _ItemSheetState extends State<ItemSheet> {
   List<Map<String, dynamic>> items = [];
   // Initialize currentListName with a default value.
   String currentListName = '';
+  // Set to track indices of items that are flagged for deletion.
+  final Set<int> _confirmDeleteIndices = <int>{};
 
   @override
   void initState() {
@@ -141,7 +143,6 @@ class _ItemSheetState extends State<ItemSheet> {
               ),
             ],
           ),
-
           // Title display using the mutable currentListName.
           Align(
             alignment: Alignment.centerLeft,
@@ -154,9 +155,7 @@ class _ItemSheetState extends State<ItemSheet> {
               ),
             ),
           ),
-
           const SizedBox(height: 10),
-
           // Items list display.
           Expanded(
             child: ListView.builder(
@@ -189,50 +188,27 @@ class _ItemSheetState extends State<ItemSheet> {
                                 size: 14, color: Colors.white),
                             onPressed: () => _updateQuantity(index, 1),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete,
-                                size: 14, color: Colors.white),
-                            onPressed: () {
-                              // Confirm deletion of an item.
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text(
-                                    'Delete Item',
-                                    style: openSansStyle(
-                                        fontSize: 20, color: Colors.black),
-                                  ),
-                                  content: Text(
-                                    'Are you sure you want to delete "${items[index]['name']}"?',
-                                    style:
-                                        openSansStyle(color: Colors.black87),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      child: Text(
-                                        'Cancel',
-                                        style: openSansStyle(
-                                            color: Colors.grey),
-                                      ),
-                                      onPressed: () =>
-                                          Navigator.pop(context),
-                                    ),
-                                    TextButton(
-                                      child: Text(
-                                        'Delete',
-                                        style: openSansStyle(
-                                            color: Colors.red),
-                                      ),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        _deleteItem(index);
-                                      },
-                                    ),
-                                  ],
+                          // Instead of a popup, toggle deletion confirmation.
+                          _confirmDeleteIndices.contains(index)
+                              ? IconButton(
+                                  icon: const Icon(Icons.close,
+                                      size: 14, color: Colors.red),
+                                  onPressed: () {
+                                    _deleteItem(index);
+                                    setState(() {
+                                      _confirmDeleteIndices.remove(index);
+                                    });
+                                  },
+                                )
+                              : IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      size: 14, color: Colors.white),
+                                  onPressed: () {
+                                    setState(() {
+                                      _confirmDeleteIndices.add(index);
+                                    });
+                                  },
                                 ),
-                              );
-                            },
-                          ),
                         ],
                       ),
                     ),
@@ -248,14 +224,12 @@ class _ItemSheetState extends State<ItemSheet> {
               },
             ),
           ),
-
           // Bottom separator.
           Divider(
             color: const Color.fromARGB(255, 50, 50, 50),
             thickness: 1.0,
             height: 1,
           ),
-
           // "Add New Item" Button.
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
