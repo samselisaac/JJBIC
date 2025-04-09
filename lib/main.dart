@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'screens/lists_overview_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 //import 'auth_service.dart';
+
+FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
