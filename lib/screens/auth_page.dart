@@ -30,6 +30,7 @@ class AuthPageState extends State<AuthPage> {
       } else {
         await authService.signUp(emailController.text, passwordController.text);
       }
+      
       Navigator.pop(context); // Return to the previous page on success.
     } catch (e) {
       setState(() {
