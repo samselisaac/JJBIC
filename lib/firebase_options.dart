@@ -65,6 +65,8 @@ class DefaultFirebaseOptions {
     projectId: 'inventorymanagement-af53a',
     databaseURL: 'https://inventorymanagement-af53a-default-rtdb.firebaseio.com',
     storageBucket: 'inventorymanagement-af53a.firebasestorage.app',
+    androidClientId: '477598499756-798lrpfp75llf97d2ltmvutop7j58sbu.apps.googleusercontent.com',
+    iosClientId: '477598499756-ajrev60j6op98spihkhoceser3o8ud9m.apps.googleusercontent.com',
     iosBundleId: 'com.jjbic.inventorymanagement',
   );
 
