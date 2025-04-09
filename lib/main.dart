@@ -21,7 +21,7 @@ class InventoryApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Inventory App',
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.black,
+        scaffoldBackgroundColor: Color.fromARGB(255, 15, 15, 15),
       ),
       
       home: ListScreen(),
