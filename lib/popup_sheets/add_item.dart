@@ -4,7 +4,7 @@ import '../utilities.dart';
 class AddItemPopup extends StatefulWidget {
   final void Function(String, int) onSubmit;
 
-  const AddItemPopup({Key? key, required this.onSubmit}) : super(key: key);
+  const AddItemPopup({super.key, required this.onSubmit});
 
   @override
   State<AddItemPopup> createState() => _AddItemPopupState();
