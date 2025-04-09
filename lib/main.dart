@@ -7,6 +7,10 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 
 FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> firebase
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
