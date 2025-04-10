@@ -36,10 +36,10 @@ class SettingsPopup extends StatelessWidget {
               if (snapshot.hasData && snapshot.data != null) {
                 // When signed in, show the "Log Out" option.
                 return ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.white),
+                  leading: const Icon(Icons.logout, color: Colors.red),
                   title: Text(
                     'Log Out',
-                    style: openSansStyle(color: Colors.red, fontSize: 16),
+                    style: openSansStyle(color: Colors.white, fontSize: 16),
                   ),
                   onTap: () {
                     // Show confirmation before logging out.
