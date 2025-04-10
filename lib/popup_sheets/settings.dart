@@ -39,7 +39,7 @@ class SettingsPopup extends StatelessWidget {
                   leading: const Icon(Icons.logout, color: Colors.white),
                   title: Text(
                     'Log Out',
-                    style: openSansStyle(color: Colors.white, fontSize: 16),
+                    style: openSansStyle(color: Colors.red, fontSize: 16),
                   ),
                   onTap: () {
                     // Show confirmation before logging out.
