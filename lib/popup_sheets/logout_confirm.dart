@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 import '../utilities.dart';
 
-class DeleteListPopup extends StatelessWidget {
-  final String listName;
-  final VoidCallback onDelete;
+class LogoutConfirmPopup extends StatelessWidget {
+  final VoidCallback onConfirm;
 
-  const DeleteListPopup({
-    super.key,
-    required this.listName,
-    required this.onDelete,
-  });
+  const LogoutConfirmPopup({Key? key, required this.onConfirm}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding + 24),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
         color: Color(0xFF242424),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -24,19 +18,19 @@ class DeleteListPopup extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Delete List',
+            'Log Out',
             style: openSansStyle(
               fontSize: 22,
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            "Are you sure you want to delete '$listName'?",
+            "Are you sure you want to log out?",
             style: openSansStyle(color: Colors.white),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -44,16 +38,17 @@ class DeleteListPopup extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel', style: openSansStyle(color: Colors.grey)),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: () {
-                  onDelete();
+                  onConfirm();
+                  Navigator.pop(context);
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                 ),
-                child: Text('Delete', style: openSansStyle(color: Colors.white)),
+                child: Text('Log Out', style: openSansStyle(color: Colors.white)),
               ),
             ],
           ),

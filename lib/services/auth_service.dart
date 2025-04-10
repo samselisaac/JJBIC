@@ -23,4 +23,8 @@ Stream<User?> authStateChanges(){
   return _auth.authStateChanges();
 }
 
+Future<void> sendPasswordResetEmail(String email) {
+  return _auth.sendPasswordResetEmail(email: email);
+}
+
 }
