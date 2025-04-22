@@ -1,5 +1,9 @@
 image: cirrusci/flutter:latest
 
+definitions:
+  caches:
+    flutter: ~/.pub-cache
+
 pipelines:
   default:
     - step:
@@ -9,5 +13,3 @@ pipelines:
         script:
           - flutter pub get
           - flutter test
-          # Optional: Add build command if needed
-          # - flutter build apk --release
