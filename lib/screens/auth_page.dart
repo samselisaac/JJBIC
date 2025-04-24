@@ -3,7 +3,7 @@ import '../utilities.dart';
 import '../services/auth_service.dart';
 
 class AuthPopup extends StatefulWidget {
-  const AuthPopup({Key? key}) : super(key: key);
+  const AuthPopup({super.key});
 
   @override
   _AuthPopupState createState() => _AuthPopupState();

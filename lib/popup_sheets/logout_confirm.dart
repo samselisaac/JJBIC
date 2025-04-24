@@ -4,7 +4,7 @@ import '../utilities.dart';
 class LogoutConfirmPopup extends StatelessWidget {
   final VoidCallback onConfirm;
 
-  const LogoutConfirmPopup({Key? key, required this.onConfirm}) : super(key: key);
+  const LogoutConfirmPopup({super.key, required this.onConfirm});
 
   @override
   Widget build(BuildContext context) {
