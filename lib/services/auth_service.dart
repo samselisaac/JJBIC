@@ -19,6 +19,17 @@ User? getCurrentUser(){
   return _auth.currentUser;
 }
 
+String getCurrentUid() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'NO_CURRENT_USER',
+        message: 'No user is currently signed in.',
+      );
+    }
+    return user.uid;
+  }
+
 Stream<User?> authStateChanges(){
   return _auth.authStateChanges();
 }
