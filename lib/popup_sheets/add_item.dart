@@ -3,8 +3,7 @@ import '../utilities.dart';
 
 class AddItemPopup extends StatefulWidget {
   final void Function(String, int) onSubmit;
-
-  const AddItemPopup({super.key, required this.onSubmit});
+  const AddItemPopup({Key? key, required this.onSubmit}) : super(key: key);
 
   @override
   State<AddItemPopup> createState() => _AddItemPopupState();
@@ -16,72 +15,70 @@ class _AddItemPopupState extends State<AddItemPopup> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
+    final txtColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final hintColor = theme.hintColor;
+    final fillColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
+    final btnColor = theme.colorScheme.primary;
+
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding + 24),
+      padding: EdgeInsets.fromLTRB(16, 24, 16, bottom + 24),
       decoration: BoxDecoration(
-        color: Color(0xFF242424),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Add Item',
-            style: openSansStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 16),
+          Text('Add Item',
+              style: openSansStyle(
+                  fontSize: 22, color: txtColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
           TextField(
-            cursorColor: Colors.white,
             controller: _itemController,
+            cursorColor: txtColor,
             decoration: InputDecoration(
               hintText: 'Item Name',
-              hintStyle: openSansStyle(color: Colors.grey),
+              hintStyle: openSansStyle(color: hintColor),
               filled: true,
-              fillColor: Colors.white12,
+              fillColor: fillColor,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
+                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
             ),
-            style: openSansStyle(color: Colors.white),
+            style: openSansStyle(color: txtColor),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           TextField(
-            cursorColor: Colors.white,
             controller: _quantityController,
+            cursorColor: txtColor,
             decoration: InputDecoration(
               hintText: 'Quantity',
-              hintStyle: openSansStyle(color: Colors.grey),
+              hintStyle: openSansStyle(color: hintColor),
               filled: true,
-              fillColor: Colors.white12,
+              fillColor: fillColor,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
+                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
             ),
-            style: openSansStyle(color: Colors.white),
+            style: openSansStyle(color: txtColor),
             keyboardType: TextInputType.number,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                if (_itemController.text.isNotEmpty && _quantityController.text.isNotEmpty) {
-                  widget.onSubmit(
-                    _itemController.text,
-                    int.tryParse(_quantityController.text) ?? 1,
-                  );
+                final name = _itemController.text.trim();
+                final qty = int.tryParse(_quantityController.text) ?? 1;
+                if (name.isNotEmpty) {
+                  widget.onSubmit(name, qty);
                   Navigator.pop(context);
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 122, 187, 94),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: Text('Add', style: openSansStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: btnColor, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              child: Text('Add', style: openSansStyle(color: txtColor)),
             ),
           ),
         ],

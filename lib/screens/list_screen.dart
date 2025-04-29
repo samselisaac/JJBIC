@@ -10,130 +10,110 @@ import 'package:inventorymanagement/services/database_service.dart';
 class ItemSheet extends StatefulWidget {
   final String listName;
   final ScrollController scrollController;
-  final void Function(String newName) onRename;
+  final void Function(String) onRename;
   final VoidCallback onDelete;
 
-  const ItemSheet({
-    super.key,
-    required this.listName,
-    required this.scrollController,
-    required this.onRename,
-    required this.onDelete,
-  });
+  const ItemSheet({Key? key, required this.listName, required this.scrollController, required this.onRename, required this.onDelete}) : super(key: key);
 
   @override
   State<ItemSheet> createState() => _ItemSheetState();
 }
 
 class _ItemSheetState extends State<ItemSheet> {
-  List<Map<String, dynamic>> items = [];
+  late List<Map<String, dynamic>> items;
   late String currentListName;
-  final Set<int> _confirmDeleteIndices = <int>{};
-  final AuthService _authService = AuthService();
-  final DatabaseService _dbService = DatabaseService();
+  final authService = AuthService();
+  final dbService = DatabaseService();
+  final confirmDeletion = <int>{};
 
   @override
   void initState() {
     super.initState();
     currentListName = widget.listName;
-    // Reload items whenever auth state changes
-    _authService.authStateChanges().listen((_) => _loadItems());
+    items = [];
+    authService.authStateChanges().listen((_) => _loadItems());
     _loadItems();
   }
 
   Future<void> _saveItems() async {
-    final user = _authService.getCurrentUser();
+    final user = authService.getCurrentUser();
     if (user != null) {
-      // Save to Firebase under sessions/{uid}/lists/{listName}/items
-      final sessionRef = await _dbService.getSessionRef();
-      await sessionRef
-          .child('lists')
-          .child(currentListName)
-          .child('items')
-          .set(items);
+      final sessionRef = await dbService.getSessionRef();
+      await sessionRef.child('lists').child(currentListName).child('items').set(items);
     } else {
-      // Save locally to SharedPreferences for guests
       final prefs = await SharedPreferences.getInstance();
-      final encoded = jsonEncode(items);
-      await prefs.setString('items_$currentListName', encoded);
+      await prefs.setString('items_$currentListName', jsonEncode(items));
     }
   }
 
   Future<void> _loadItems() async {
-    final user = _authService.getCurrentUser();
+    final user = authService.getCurrentUser();
     if (user != null) {
-      // Load from Firebase
-      final sessionRef = await _dbService.getSessionRef();
-      final snapshot = await sessionRef
-          .child('lists')
-          .child(currentListName)
-          .child('items')
-          .get();
-      if (snapshot.exists) {
+      final snapshot = await (await dbService.getSessionRef())
+        .child('lists')
+        .child(currentListName)
+        .child('items')
+        .get();
+      if (snapshot.exists && snapshot.value != null) {
         final List<dynamic> data = snapshot.value as List<dynamic>;
-        setState(() {
-          items = data.map((e) => Map<String, dynamic>.from(e)).toList();
-        });
+        items = data.map((e) => Map<String, dynamic>.from(e)).toList();
       } else {
-        setState(() {
-          items = [];
-        });
+        items = [];
       }
     } else {
-      // Load from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getString('items_$currentListName');
       if (stored != null) {
         final List<dynamic> data = jsonDecode(stored);
-        setState(() {
-          items = data.map((e) => Map<String, dynamic>.from(e)).toList();
-        });
+        items = data.map((e) => Map<String, dynamic>.from(e)).toList();
       } else {
-        setState(() {
-          items = [];
-        });
+        items = [];
       }
     }
+    setState(() {});
+  }
+
+  void _updateQuantity(int index, int delta) {
+    setState(() {
+      final current = items[index]['quantity'] as int;
+      final newQty = current + delta;
+      items[index]['quantity'] = newQty < 0 ? 0 : (newQty > 999 ? 999 : newQty);
+    });
+    _saveItems();
   }
 
   void _addItem() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? Theme.of(context).canvasColor,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddItemPopup(
-        onSubmit: (itemName, quantity) {
-          setState(() {
-            items.add({'name': itemName, 'quantity': quantity});
-          });
-          _saveItems();
-        },
-      ),
+      builder: (_) => AddItemPopup(onSubmit: (name, qty) {
+        items.add({'name': name, 'quantity': qty});
+        _saveItems();
+        setState(() {});
+      }),
     );
-  }
-
-  void _updateQuantity(int index, int change) {
-    setState(() {
-      final currentQty = items[index]['quantity'] as int;
-      items[index]['quantity'] = (currentQty + change).clamp(0, 999);
-    });
-    _saveItems();
   }
 
   void _deleteItem(int index) {
     setState(() {
       items.removeAt(index);
-      _confirmDeleteIndices.remove(index);
+      confirmDeletion.remove(index);
     });
     _saveItems();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final iconColor = theme.iconTheme.color ?? Colors.black;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF242424),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Column(
@@ -142,33 +122,29 @@ class _ItemSheetState extends State<ItemSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => ListEditPopup(
-                      currentListName: currentListName,
-                      onRename: (newName) {
-                        widget.onRename(newName);
-                        setState(() {
-                          currentListName = newName;
-                        });
-                        _saveItems();
-                      },
-                      onDelete: () {
-                        widget.onDelete();
-                        setState(() {
-                          items = [];
-                        });
-                      },
-                    ),
-                  );
-                },
+                icon: Icon(Icons.more_vert, color: iconColor),
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  backgroundColor: bgColor,
+                  isScrollControlled: true,
+                  builder: (_) => ListEditPopup(
+                    currentListName: currentListName,
+                    onRename: (newName) {
+                      widget.onRename(newName);
+                      currentListName = newName;
+                      _saveItems();
+                      setState(() {});
+                    },
+                    onDelete: () {
+                      widget.onDelete();
+                      items.clear();
+                      setState(() {});
+                    },
+                  ),
+                ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: Icon(Icons.close, color: iconColor),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -177,11 +153,7 @@ class _ItemSheetState extends State<ItemSheet> {
             alignment: Alignment.centerLeft,
             child: Text(
               '\n   $currentListName',
-              style: openSansStyle(
-                fontSize: 20,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+              style: openSansStyle(fontSize: 20, color: textColor, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(height: 10),
@@ -190,80 +162,49 @@ class _ItemSheetState extends State<ItemSheet> {
               controller: widget.scrollController,
               itemCount: items.length,
               itemBuilder: (context, index) {
+                final item = items[index];
                 return Column(
                   children: [
                     ListTile(
-                      title: Text(
-                        items[index]['name'] as String,
-                        style: openSansStyle(color: Colors.white, fontSize: 14),
-                      ),
-                      subtitle: Text(
-                        'Quantity: ${items[index]['quantity']}',
-                        style: openSansStyle(color: Colors.white, fontSize: 14),
-                      ),
+                      title: Text(item['name'], style: openSansStyle(color: textColor, fontSize: 14)),
+                      subtitle: Text('Quantity: ${item['quantity']}', style: openSansStyle(color: textColor, fontSize: 14)),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove, size: 14, color: Colors.white),
+                            icon: Icon(Icons.remove, color: iconColor, size: 14),
                             onPressed: () => _updateQuantity(index, -1),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                            icon: Icon(Icons.add, color: iconColor, size: 14),
                             onPressed: () => _updateQuantity(index, 1),
                           ),
-                          _confirmDeleteIndices.contains(index)
+                          confirmDeletion.contains(index)
                               ? IconButton(
-                                  icon: const Icon(Icons.close, size: 14, color: Colors.red),
+                                  icon: Icon(Icons.close, color: theme.colorScheme.error, size: 14),
                                   onPressed: () => _deleteItem(index),
                                 )
                               : IconButton(
-                                  icon: const Icon(Icons.delete, size: 14, color: Colors.white),
+                                  icon: Icon(Icons.delete, color: iconColor, size: 14),
                                   onPressed: () {
-                                    setState(() {
-                                      _confirmDeleteIndices.add(index);
-                                    });
+                                    setState(() => confirmDeletion.add(index));
                                   },
                                 ),
                         ],
                       ),
                     ),
-                    Divider(
-                      color: const Color.fromARGB(255, 50, 50, 50),
-                      thickness: 0.8,
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
+                    Divider(thickness: 0.8, indent: 20, endIndent: 20),
                   ],
                 );
               },
             ),
           ),
-          Divider(
-            color: const Color.fromARGB(255, 50, 50, 50),
-            thickness: 1.0,
-            height: 1,
-          ),
+          Divider(),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                TextButton(
-                  onPressed: _addItem,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    '  +   Add New Item',
-                    style: openSansStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ),
-              ],
+            child: TextButton(
+              onPressed: _addItem,
+              child: Text('+ Add New Item', style: openSansStyle(color: textColor, fontSize: 14)),
             ),
           ),
         ],

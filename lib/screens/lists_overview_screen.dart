@@ -9,55 +9,44 @@ import 'package:inventorymanagement/services/database_service.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
-
   @override
   ListScreenState createState() => ListScreenState();
 }
 
 class ListScreenState extends State<ListScreen> {
   List<String> lists = [];
-  final AuthService _authService = AuthService();
-  final DatabaseService _dbService = DatabaseService();
+  final _auth = AuthService();
+  final _db = DatabaseService();
 
   @override
   void initState() {
     super.initState();
-    _authService.authStateChanges().listen((_) => _loadLists());
+    _auth.authStateChanges().listen((_) => _loadLists());
     _loadLists();
   }
 
-  /// Save list names to Firebase for signed-in users, or to SharedPreferences for guests
   Future<void> _saveLists() async {
-    final user = _authService.getCurrentUser();
+    final user = _auth.getCurrentUser();
     if (user != null) {
-      final sessionRef = await _dbService.getSessionRef();
-      // Save as an array of strings
-      await sessionRef.child('lists').set(lists);
+      final ref = await _db.getSessionRef();
+      await ref.child('lists').set(lists);
     } else {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('inventory_lists', lists);
     }
   }
 
-  /// Load list names from Firebase or SharedPreferences
   Future<void> _loadLists() async {
-    final user = _authService.getCurrentUser();
+    final user = _auth.getCurrentUser();
     if (user != null) {
-      final sessionRef = await _dbService.getSessionRef();
-      final snapshot = await sessionRef.child('lists').get();
-      if (snapshot.exists && snapshot.value != null) {
-        final val = snapshot.value;
-        if (val is List<dynamic>) {
-          // Basic array
+      final ref = await _db.getSessionRef();
+      final snap = await ref.child('lists').get();
+      if (snap.exists && snap.value != null) {
+        final val = snap.value;
+        if (val is List) {
           lists = val.map((e) => e.toString()).toList();
         } else if (val is Map) {
-          // Filter only entries that are String (exclude nested maps under items)
-          lists = val.values
-              .where((e) => e is String)
-              .map((e) => e as String)
-              .toList();
-        } else {
-          lists = [];
+          lists = val.values.whereType<String>().toList();
         }
       } else {
         lists = [];
@@ -66,115 +55,94 @@ class ListScreenState extends State<ListScreen> {
       final prefs = await SharedPreferences.getInstance();
       lists = prefs.getStringList('inventory_lists') ?? [];
     }
-
     setState(() {});
   }
 
   void _createNewList() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? Theme.of(context).canvasColor,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddListPopup(
-        onSubmit: (newListName) {
-          setState(() => lists.add(newListName));
-          _saveLists();
-        },
-      ),
+      builder: (_) => AddListPopup(onSubmit: (name) {
+        setState(() => lists.add(name));
+        _saveLists();
+      }),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final bgColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
+    final iconColor = theme.appBarTheme.iconTheme?.color ?? theme.iconTheme.color;
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: AppBar(
-          title: Text(
-            'Your Lists',
-            style: openSansStyle(
-              fontSize: 20,
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+      appBar: AppBar(
+        title: Text(
+          'Your Lists',
+          style: openSansStyle(
+            fontSize: 20,
+            color: textColor,
+            fontWeight: FontWeight.w700,
           ),
-          backgroundColor: Color.fromARGB(255, 15, 15, 15),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.more_vert, color: Colors.white),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => SettingsPopup(),
-                );
-              },
-            ),
-          ],
         ),
+        backgroundColor: bgColor,
+        iconTheme: theme.appBarTheme.iconTheme?.copyWith(color: iconColor),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_vert, color: iconColor),
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? theme.canvasColor,
+              isScrollControlled: true,
+              builder: (_) => const SettingsPopup(),
+            ),
+          )
+        ],
       ),
       body: GridView.builder(
-        padding: EdgeInsets.all(16),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           childAspectRatio: 1,
         ),
         itemCount: lists.length + 1,
-        itemBuilder: (context, index) {
-          if (index == lists.length) {
+        itemBuilder: (ctx, idx) {
+          if (idx == lists.length) {
             return GestureDetector(
               onTap: _createNewList,
               child: Card(
                 elevation: 0,
-                color: Color.fromARGB(255, 122, 187, 94),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.add, color: Colors.white, size: 30),
-                      SizedBox(height: 8),
-                    ],
-                  ),
-                ),
+                color: theme.colorScheme.primary,
+                child: const Center(child: Icon(Icons.add, color: Colors.white, size: 30)),
               ),
             );
           }
           return Card(
             elevation: 0,
-            color: Color.fromARGB(255, 45, 45, 45),
+            color: theme.cardColor,
             child: ListTile(
               title: Text(
-                lists[index],
+                lists[idx],
                 style: openSansStyle(
+                  color: textColor,
                   fontSize: 16,
-                  color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               onTap: () => showModalBottomSheet(
                 context: context,
+                backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? theme.canvasColor,
                 isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => DraggableScrollableSheet(
+                builder: (_) => DraggableScrollableSheet(
                   expand: false,
                   initialChildSize: 0.95,
-                  maxChildSize: 0.95,
-                  minChildSize: 0.5,
-                  builder: (_, controller) => ItemSheet(
-                    listName: lists[index],
-                    scrollController: controller,
-                    onRename: (newName) {
-                      setState(() => lists[index] = newName);
-                      _saveLists();
-                    },
-                    onDelete: () {
-                      setState(() => lists.removeAt(index));
-                      _saveLists();
-                      Navigator.pop(context);
-                    },
+                  builder: (_, ctrl) => ItemSheet(
+                    listName: lists[idx], scrollController: ctrl,
+                    onRename: (n) { setState(() => lists[idx] = n); _saveLists(); },
+                    onDelete: () { setState(() { lists.removeAt(idx); }); _saveLists(); Navigator.pop(context); },
                   ),
                 ),
               ),

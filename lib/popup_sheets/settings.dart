@@ -3,19 +3,27 @@ import '../utilities.dart';
 import '../screens/auth_page.dart';
 import '../popup_sheets/logout_confirm.dart';
 import '../services/auth_service.dart';
+import '../../main.dart'; // for themeNotifier
 
 class SettingsPopup extends StatelessWidget {
-  const SettingsPopup({super.key});
+  const SettingsPopup({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final AuthService authService = AuthService();
+    final theme = Theme.of(context);
+    final isDark = themeNotifier.value == ThemeMode.dark;
+    final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final iconColor = theme.iconTheme.color ?? Colors.black;
+    final primaryColor = theme.colorScheme.primary;
+    final errorColor = theme.colorScheme.error;
+    final authService = AuthService();
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF242424),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -25,29 +33,45 @@ class SettingsPopup extends StatelessWidget {
             'Settings',
             style: openSansStyle(
               fontSize: 22,
-              color: Colors.white,
+              color: textColor,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
+
+          // Theme toggle
+          ListTile(
+            leading: Icon(Icons.brightness_6, color: iconColor),
+            title: Text(
+              isDark ? 'Dark Mode' : 'Light Mode',
+              style: openSansStyle(color: textColor, fontSize: 16),
+            ),
+            trailing: Switch(
+              value: isDark,
+              onChanged: (val) {
+                themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Authentication option
           StreamBuilder(
             stream: authService.authStateChanges(),
             builder: (context, snapshot) {
               if (snapshot.hasData && snapshot.data != null) {
-                // When signed in, show the "Log Out" option.
                 return ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
+                  leading: Icon(Icons.logout, color: errorColor),
                   title: Text(
                     'Log Out',
-                    style: openSansStyle(color: Colors.white, fontSize: 16),
+                    style: openSansStyle(color: textColor, fontSize: 16),
                   ),
                   onTap: () {
-                    // Show confirmation before logging out.
                     showModalBottomSheet(
                       context: context,
+                      backgroundColor: bgColor,
                       isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => LogoutConfirmPopup(
+                      builder: (_) => LogoutConfirmPopup(
                         onConfirm: () async {
                           await authService.signOut();
                         },
@@ -56,28 +80,25 @@ class SettingsPopup extends StatelessWidget {
                   },
                 );
               } else {
-                // not signed in: show the sign in/sign up option.
                 return ListTile(
-                  leading: const Icon(Icons.login, color: Colors.white),
+                  leading: Icon(Icons.login, color: iconColor),
                   title: Text(
                     'Sign In / Sign Up',
-                    style: openSansStyle(color: Colors.white, fontSize: 16),
+                    style: openSansStyle(color: textColor, fontSize: 16),
                   ),
                   onTap: () {
                     Navigator.pop(context);
                     showModalBottomSheet(
                       context: context,
+                      backgroundColor: bgColor,
                       isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const AuthPopup(),
+                      builder: (_) => const AuthPopup(),
                     );
                   },
                 );
               }
             },
           ),
-          const SizedBox(height: 10),
-          // more settings...
         ],
       ),
     );

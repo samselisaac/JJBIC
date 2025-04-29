@@ -3,13 +3,8 @@ import '../utilities.dart';
 
 class RenameListPopup extends StatefulWidget {
   final String currentName;
-  final void Function(String newName) onRename;
-
-  const RenameListPopup({
-    super.key,
-    required this.currentName,
-    required this.onRename,
-  });
+  final void Function(String) onRename;
+  const RenameListPopup({Key? key, required this.currentName, required this.onRename}) : super(key: key);
 
   @override
   State<RenameListPopup> createState() => _RenameListPopupState();
@@ -26,59 +21,51 @@ class _RenameListPopupState extends State<RenameListPopup> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
+    final txtColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final hintColor = theme.hintColor;
+    final fillColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
+    final btnColor = theme.colorScheme.primary;
+
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomPadding + 24),
+      padding: EdgeInsets.fromLTRB(16, 24, 16, bottom + 24),
       decoration: BoxDecoration(
-        color: Color(0xFF242424),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Rename List',
-            style: openSansStyle(
-              fontSize: 22,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 16),
+          Text('Rename List', style: openSansStyle(fontSize: 22, color: txtColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
           TextField(
             controller: _controller,
-            cursorColor: Colors.white,
+            cursorColor: txtColor,
             decoration: InputDecoration(
               hintText: 'New list name',
-              hintStyle: openSansStyle(color: Colors.grey),
+              hintStyle: openSansStyle(color: hintColor),
               filled: true,
-              fillColor: Colors.white12,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
+              fillColor: fillColor,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
             ),
-            style: openSansStyle(color: Colors.white),
+            style: openSansStyle(color: txtColor),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                if (_controller.text.isNotEmpty) {
-                  widget.onRename(_controller.text);
+                final newName = _controller.text.trim();
+                if (newName.isNotEmpty) {
+                  widget.onRename(newName);
                   Navigator.pop(context);
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 122, 187, 94),
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: Text(
-                'Rename',
-                style: openSansStyle(color: Colors.white),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: btnColor, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              child: Text('Rename', style: openSansStyle(color: txtColor)),
             ),
           ),
         ],

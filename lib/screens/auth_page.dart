@@ -3,177 +3,151 @@ import '../utilities.dart';
 import '../services/auth_service.dart';
 
 class AuthPopup extends StatefulWidget {
-  const AuthPopup({super.key});
+  const AuthPopup({Key? key}) : super(key: key);
 
   @override
-  _AuthPopupState createState() => _AuthPopupState();
+  State<AuthPopup> createState() => _AuthPopupState();
 }
 
 class _AuthPopupState extends State<AuthPopup> {
   bool isSignIn = true;
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
-  final AuthService authService = AuthService();
-  String errorMessage = '';
+  final emailCtrl = TextEditingController();
+  final passCtrl = TextEditingController();
+  final confirmCtrl = TextEditingController();
+  final authService = AuthService();
+  String error = '';
 
-  void toggleForm() {
-    setState(() {
-      isSignIn = !isSignIn;
-      errorMessage = '';
-    });
-  }
-
-  Future<void> submit() async {
+  Future<void> _submit() async {
+    setState(() => error = '');
     try {
+      final email = emailCtrl.text.trim();
+      final password = passCtrl.text;
+      if (email.isEmpty || password.isEmpty) {
+        setState(() => error = 'Email and password are required.');
+        return;
+      }
       if (isSignIn) {
-        await authService.signIn(emailController.text, passwordController.text);
+        await authService.signIn(email, password);
       } else {
-        if (passwordController.text != confirmPasswordController.text) {
-          setState(() {
-            errorMessage = "Passwords do not match.";
-          });
+        final confirm = confirmCtrl.text;
+        if (password != confirm) {
+          setState(() => error = 'Passwords do not match.');
           return;
         }
-        await authService.signUp(emailController.text, passwordController.text);
+        await authService.signUp(email, password);
       }
       Navigator.pop(context);
     } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-      });
-    }
-  }
-
-  Future<void> forgotPassword() async {
-    if (emailController.text.isEmpty) {
-      setState(() {
-        errorMessage = "Please enter your email to reset password.";
-      });
-      return;
-    }
-    try {
-      await authService.sendPasswordResetEmail(emailController.text);
-      setState(() {
-        errorMessage = "Password reset email sent!";
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-      });
+      setState(() => error = e.toString());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: MediaQuery.of(context).viewInsets,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF242424),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isSignIn ? "Sign In" : "Sign Up",
-                style: openSansStyle(
-                  fontSize: 22,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+    final theme = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final txtColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final fieldBg = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
+    final hint = theme.hintColor;
+    final primary = theme.colorScheme.primary;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
+      decoration: BoxDecoration(
+        color: theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              isSignIn ? 'Sign In' : 'Sign Up',
+              style: openSansStyle(
+                fontSize: 22,
+                color: txtColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              cursorColor: txtColor,
+              decoration: InputDecoration(
+                hintText: 'Email',
+                hintStyle: openSansStyle(color: hint),
+                filled: true,
+                fillColor: fieldBg,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: emailController,
-                cursorColor: Colors.white,
-                style: openSansStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: "Email",
-                  hintStyle: openSansStyle(color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white12,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
+              style: openSansStyle(color: txtColor),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passCtrl,
+              obscureText: true,
+              cursorColor: txtColor,
+              decoration: InputDecoration(
+                hintText: 'Password',
+                hintStyle: openSansStyle(color: hint),
+                filled: true,
+                fillColor: fieldBg,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
                 ),
               ),
+              style: openSansStyle(color: txtColor),
+            ),
+            if (!isSignIn) ...[
               const SizedBox(height: 16),
               TextField(
-                controller: passwordController,
-                cursorColor: Colors.white,
+                controller: confirmCtrl,
                 obscureText: true,
-                style: openSansStyle(color: Colors.white),
+                cursorColor: txtColor,
                 decoration: InputDecoration(
-                  hintText: "Password",
-                  hintStyle: openSansStyle(color: Colors.grey),
+                  hintText: 'Confirm Password',
+                  hintStyle: openSansStyle(color: hint),
                   filled: true,
-                  fillColor: Colors.white12,
+                  fillColor: fieldBg,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              if (!isSignIn)
-                TextField(
-                  controller: confirmPasswordController,
-                  cursorColor: Colors.white,
-                  obscureText: true,
-                  style: openSansStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Confirm Password",
-                    hintStyle: openSansStyle(color: Colors.grey),
-                    filled: true,
-                    fillColor: Colors.white12,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              if (!isSignIn) const SizedBox(height: 16),
-              if (errorMessage.isNotEmpty)
-                Text(
-                  errorMessage,
-                  style: openSansStyle(color: Colors.red),
-                ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue,
-                  elevation: 0,
-                ),
-                child: Text(
-                  isSignIn ? "Sign In" : "Sign Up",
-                  style: openSansStyle(fontSize: 16),
-                ),
-              ),
-              if (isSignIn)
-                TextButton(
-                  onPressed: forgotPassword,
-                  child: Text(
-                    "Forgot Password?",
-                    style: openSansStyle(color: Colors.blue),
-                  ),
-                ),
-              TextButton(
-                onPressed: toggleForm,
-                child: Text(
-                  isSignIn
-                      ? "Don't have an account? Sign Up"
-                      : "Already have an account? Sign In",
-                  style: openSansStyle(color: Colors.blue),
-                ),
+                style: openSansStyle(color: txtColor),
               ),
             ],
-          ),
+            if (error.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(error, style: openSansStyle(color: theme.colorScheme.error)),
+            ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _submit,
+              style: ElevatedButton.styleFrom(backgroundColor: primary),
+              child: Text(
+                isSignIn ? 'Sign In' : 'Sign Up',
+                style: openSansStyle(color: txtColor),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => setState(() => isSignIn = !isSignIn),
+              child: Text(
+                isSignIn
+                    ? "Don't have an account? Sign Up"
+                    : "Already have an account? Sign In",
+                style: openSansStyle(color: primary),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );
