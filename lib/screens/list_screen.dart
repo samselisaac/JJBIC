@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:inventorymanagement/popup_sheets/edit_list.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utilities.dart';
 import '../popup_sheets/add_item.dart';
+import '../popup_sheets/edit_list.dart';
+import 'package:inventorymanagement/services/auth_service.dart';
+import 'package:inventorymanagement/services/database_service.dart';
 
 class ItemSheet extends StatefulWidget {
   final String listName;
   final ScrollController scrollController;
-  // Callbacks provided by the parent (ListScreen) for renaming and deleting.
   final void Function(String newName) onRename;
   final VoidCallback onDelete;
 
@@ -26,36 +27,72 @@ class ItemSheet extends StatefulWidget {
 
 class _ItemSheetState extends State<ItemSheet> {
   List<Map<String, dynamic>> items = [];
-  // Initialize currentListName with a default value.
-  String currentListName = '';
-  // Set to track indices of items that are flagged for deletion.
+  late String currentListName;
   final Set<int> _confirmDeleteIndices = <int>{};
+  final AuthService _authService = AuthService();
+  final DatabaseService _dbService = DatabaseService();
 
   @override
   void initState() {
     super.initState();
-    // Set currentListName from the widget's listName.
     currentListName = widget.listName;
+    // Reload items whenever auth state changes
+    _authService.authStateChanges().listen((_) => _loadItems());
     _loadItems();
   }
 
   Future<void> _saveItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Use currentListName in the key, so if the title changes, you may want to handle data migration.
-    final String key = 'items_$currentListName';
-    final String encodedItems = jsonEncode(items);
-    await prefs.setString(key, encodedItems);
+    final user = _authService.getCurrentUser();
+    if (user != null) {
+      // Save to Firebase under sessions/{uid}/lists/{listName}/items
+      final sessionRef = await _dbService.getSessionRef();
+      await sessionRef
+          .child('lists')
+          .child(currentListName)
+          .child('items')
+          .set(items);
+    } else {
+      // Save locally to SharedPreferences for guests
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(items);
+      await prefs.setString('items_$currentListName', encoded);
+    }
   }
 
   Future<void> _loadItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String key = 'items_$currentListName';
-    final String? encodedItems = prefs.getString(key);
-    if (encodedItems != null) {
-      final List<dynamic> decoded = jsonDecode(encodedItems);
-      setState(() {
-        items = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
-      });
+    final user = _authService.getCurrentUser();
+    if (user != null) {
+      // Load from Firebase
+      final sessionRef = await _dbService.getSessionRef();
+      final snapshot = await sessionRef
+          .child('lists')
+          .child(currentListName)
+          .child('items')
+          .get();
+      if (snapshot.exists) {
+        final List<dynamic> data = snapshot.value as List<dynamic>;
+        setState(() {
+          items = data.map((e) => Map<String, dynamic>.from(e)).toList();
+        });
+      } else {
+        setState(() {
+          items = [];
+        });
+      }
+    } else {
+      // Load from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('items_$currentListName');
+      if (stored != null) {
+        final List<dynamic> data = jsonDecode(stored);
+        setState(() {
+          items = data.map((e) => Map<String, dynamic>.from(e)).toList();
+        });
+      } else {
+        setState(() {
+          items = [];
+        });
+      }
     }
   }
 
@@ -67,10 +104,7 @@ class _ItemSheetState extends State<ItemSheet> {
       builder: (context) => AddItemPopup(
         onSubmit: (itemName, quantity) {
           setState(() {
-            items.add({
-              'name': itemName,
-              'quantity': quantity,
-            });
+            items.add({'name': itemName, 'quantity': quantity});
           });
           _saveItems();
         },
@@ -80,8 +114,8 @@ class _ItemSheetState extends State<ItemSheet> {
 
   void _updateQuantity(int index, int change) {
     setState(() {
-      items[index]['quantity'] =
-          (items[index]['quantity'] + change).clamp(0, 999);
+      final currentQty = items[index]['quantity'] as int;
+      items[index]['quantity'] = (currentQty + change).clamp(0, 999);
     });
     _saveItems();
   }
@@ -89,6 +123,7 @@ class _ItemSheetState extends State<ItemSheet> {
   void _deleteItem(int index) {
     setState(() {
       items.removeAt(index);
+      _confirmDeleteIndices.remove(index);
     });
     _saveItems();
   }
@@ -103,14 +138,12 @@ class _ItemSheetState extends State<ItemSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Column(
         children: [
-          // Top buttons row for options and close.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 onPressed: () {
-                  // Show the edit popup that allows renaming and deletion.
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -118,18 +151,17 @@ class _ItemSheetState extends State<ItemSheet> {
                     builder: (context) => ListEditPopup(
                       currentListName: currentListName,
                       onRename: (newName) {
-                        // Update the parent's data.
                         widget.onRename(newName);
-                        // Update our local title for immediate UI change.
                         setState(() {
                           currentListName = newName;
                         });
-                        // Do NOT close the modal so that it stays open.
+                        _saveItems();
                       },
                       onDelete: () {
                         widget.onDelete();
-                        // Close the modal if you want after deletion.
-                        Navigator.pop(context);
+                        setState(() {
+                          items = [];
+                        });
                       },
                     ),
                   );
@@ -137,13 +169,10 @@ class _ItemSheetState extends State<ItemSheet> {
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
-          // Title display using the mutable currentListName.
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -156,7 +185,6 @@ class _ItemSheetState extends State<ItemSheet> {
             ),
           ),
           const SizedBox(height: 10),
-          // Items list display.
           Expanded(
             child: ListView.builder(
               controller: widget.scrollController,
@@ -166,43 +194,31 @@ class _ItemSheetState extends State<ItemSheet> {
                   children: [
                     ListTile(
                       title: Text(
-                        items[index]['name'],
-                        style:
-                            openSansStyle(color: Colors.white, fontSize: 14),
+                        items[index]['name'] as String,
+                        style: openSansStyle(color: Colors.white, fontSize: 14),
                       ),
                       subtitle: Text(
                         'Quantity: ${items[index]['quantity']}',
-                        style:
-                            openSansStyle(color: Colors.white, fontSize: 14),
+                        style: openSansStyle(color: Colors.white, fontSize: 14),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove,
-                                size: 14, color: Colors.white),
+                            icon: const Icon(Icons.remove, size: 14, color: Colors.white),
                             onPressed: () => _updateQuantity(index, -1),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.add,
-                                size: 14, color: Colors.white),
+                            icon: const Icon(Icons.add, size: 14, color: Colors.white),
                             onPressed: () => _updateQuantity(index, 1),
                           ),
-                          // Instead of a popup, toggle deletion confirmation.
                           _confirmDeleteIndices.contains(index)
                               ? IconButton(
-                                  icon: const Icon(Icons.close,
-                                      size: 14, color: Colors.red),
-                                  onPressed: () {
-                                    _deleteItem(index);
-                                    setState(() {
-                                      _confirmDeleteIndices.remove(index);
-                                    });
-                                  },
+                                  icon: const Icon(Icons.close, size: 14, color: Colors.red),
+                                  onPressed: () => _deleteItem(index),
                                 )
                               : IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      size: 14, color: Colors.white),
+                                  icon: const Icon(Icons.delete, size: 14, color: Colors.white),
                                   onPressed: () {
                                     setState(() {
                                       _confirmDeleteIndices.add(index);
@@ -224,17 +240,15 @@ class _ItemSheetState extends State<ItemSheet> {
               },
             ),
           ),
-          // Bottom separator.
           Divider(
             color: const Color.fromARGB(255, 50, 50, 50),
             thickness: 1.0,
             height: 1,
           ),
-          // "Add New Item" Button.
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.start, // Align left.
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 TextButton(
                   onPressed: _addItem,
@@ -246,8 +260,7 @@ class _ItemSheetState extends State<ItemSheet> {
                   ),
                   child: Text(
                     '  +   Add New Item',
-                    style: openSansStyle(
-                        color: Colors.white, fontSize: 14),
+                    style: openSansStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
               ],
