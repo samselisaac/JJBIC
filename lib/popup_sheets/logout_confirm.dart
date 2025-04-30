@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../utilities.dart';
+import 'package:inventorymanagement/utilities.dart';
 
 class LogoutConfirmPopup extends StatelessWidget {
   final VoidCallback onConfirm;
-  const LogoutConfirmPopup({Key? key, required this.onConfirm}) : super(key: key);
+  const LogoutConfirmPopup({super.key, required this.onConfirm});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
     final txtColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final errorColor = theme.colorScheme.error;
+    final hintColor = theme.hintColor;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -21,7 +21,10 @@ class LogoutConfirmPopup extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Log Out', style: openSansStyle(fontSize: 22, color: txtColor, fontWeight: FontWeight.bold)),
+          Text(
+            'Log Out',
+            style: openSansStyle(fontSize: 22, color: txtColor, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           Text('Are you sure you want to log out?', style: openSansStyle(color: txtColor)),
           const SizedBox(height: 16),
@@ -30,7 +33,7 @@ class LogoutConfirmPopup extends StatelessWidget {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Cancel', style: openSansStyle(color: theme.hintColor)),
+                child: Text('Cancel', style: openSansStyle(color: hintColor)),
               ),
               const SizedBox(width: 16),
               ElevatedButton(
@@ -39,7 +42,7 @@ class LogoutConfirmPopup extends StatelessWidget {
                   Navigator.pop(context);
                   Navigator.pop(context);
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: errorColor),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text('Log Out', style: openSansStyle(color: txtColor)),
               ),
             ],

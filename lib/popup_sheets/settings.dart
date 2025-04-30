@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
-import '../utilities.dart';
 import '../screens/auth_page.dart';
-import '../popup_sheets/logout_confirm.dart';
 import '../services/auth_service.dart';
-import '../../main.dart'; // for themeNotifier
+import '../utilities.dart';
+import '../popup_sheets/logout_confirm.dart';
+import '../../main.dart' show themeNotifier;
 
 class SettingsPopup extends StatelessWidget {
-  const SettingsPopup({Key? key}) : super(key: key);
+  const SettingsPopup({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isDark = themeNotifier.value == ThemeMode.dark;
+    final theme = Theme.of(context);
     final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
     final iconColor = theme.iconTheme.color ?? Colors.black;
-    final primaryColor = theme.colorScheme.primary;
-    final errorColor = theme.colorScheme.error;
     final authService = AuthService();
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -39,7 +39,6 @@ class SettingsPopup extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Theme toggle
           ListTile(
             leading: Icon(Icons.brightness_6, color: iconColor),
             title: Text(
@@ -49,54 +48,46 @@ class SettingsPopup extends StatelessWidget {
             trailing: Switch(
               value: isDark,
               onChanged: (val) {
-                themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                themeNotifier.value =
+                    val ? ThemeMode.dark : ThemeMode.light;
               },
             ),
           ),
-          const SizedBox(height: 16),
 
-          // Authentication option
           StreamBuilder(
             stream: authService.authStateChanges(),
             builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data != null) {
-                return ListTile(
-                  leading: Icon(Icons.logout, color: errorColor),
-                  title: Text(
-                    'Log Out',
-                    style: openSansStyle(color: textColor, fontSize: 16),
-                  ),
-                  onTap: () {
+              final signedIn =
+                  snapshot.hasData && snapshot.data != null;
+              return ListTile(
+                leading: Icon(
+                  signedIn ? Icons.logout : Icons.login,
+                  color: signedIn ? Colors.red : iconColor,
+                ),
+                title: Text(
+                  signedIn ? 'Log Out' : 'Sign In / Sign Up',
+                  style: openSansStyle(color: textColor, fontSize: 16),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  if (signedIn) {
                     showModalBottomSheet(
                       context: context,
                       backgroundColor: bgColor,
                       isScrollControlled: true,
-                      builder: (_) => LogoutConfirmPopup(
-                        onConfirm: () async {
-                          await authService.signOut();
-                        },
-                      ),
+                      builder: (_) =>
+                          LogoutConfirmPopup(onConfirm: () => authService.signOut()),
                     );
-                  },
-                );
-              } else {
-                return ListTile(
-                  leading: Icon(Icons.login, color: iconColor),
-                  title: Text(
-                    'Sign In / Sign Up',
-                    style: openSansStyle(color: textColor, fontSize: 16),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
+                  } else {
                     showModalBottomSheet(
                       context: context,
                       backgroundColor: bgColor,
                       isScrollControlled: true,
                       builder: (_) => const AuthPopup(),
                     );
-                  },
-                );
-              }
+                  }
+                },
+              );
             },
           ),
         ],

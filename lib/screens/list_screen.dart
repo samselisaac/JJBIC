@@ -1,73 +1,80 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utilities.dart';
-import '../popup_sheets/add_item.dart';
-import '../popup_sheets/edit_list.dart';
 import 'package:inventorymanagement/services/auth_service.dart';
 import 'package:inventorymanagement/services/database_service.dart';
+
+import 'package:inventorymanagement/utilities.dart';
+import 'package:inventorymanagement/popup_sheets/add_item.dart';
+import 'package:inventorymanagement/popup_sheets/edit_list.dart';
 
 class ItemSheet extends StatefulWidget {
   final String listName;
   final ScrollController scrollController;
   final void Function(String) onRename;
   final VoidCallback onDelete;
-
-  const ItemSheet({Key? key, required this.listName, required this.scrollController, required this.onRename, required this.onDelete}) : super(key: key);
+  const ItemSheet({
+    super.key,
+    required this.listName,
+    required this.scrollController,
+    required this.onRename,
+    required this.onDelete,
+  });
 
   @override
   State<ItemSheet> createState() => _ItemSheetState();
 }
 
 class _ItemSheetState extends State<ItemSheet> {
-  late List<Map<String, dynamic>> items;
-  late String currentListName;
-  final authService = AuthService();
-  final dbService = DatabaseService();
-  final confirmDeletion = <int>{};
+  late List<Map<String, dynamic>> _items;
+  late String _currentListName;
+  final AuthService _authService = AuthService();
+  final DatabaseService _dbService = DatabaseService();
+  final Set<int> _pendingDeletion = {};
 
   @override
   void initState() {
     super.initState();
-    currentListName = widget.listName;
-    items = [];
-    authService.authStateChanges().listen((_) => _loadItems());
+    _currentListName = widget.listName;
+    _items = [];
+    _authService.authStateChanges().listen((_) => _loadItems());
     _loadItems();
   }
 
   Future<void> _saveItems() async {
-    final user = authService.getCurrentUser();
+    final user = _authService.getCurrentUser();
     if (user != null) {
-      final sessionRef = await dbService.getSessionRef();
-      await sessionRef.child('lists').child(currentListName).child('items').set(items);
+      final ref = await _dbService.getSessionRef();
+      await ref.child('lists').child(_currentListName).child('items').set(_items);
     } else {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('items_$currentListName', jsonEncode(items));
+      await prefs.setString('items_$_currentListName', jsonEncode(_items));
     }
   }
 
   Future<void> _loadItems() async {
-    final user = authService.getCurrentUser();
+    final user = _authService.getCurrentUser();
     if (user != null) {
-      final snapshot = await (await dbService.getSessionRef())
-        .child('lists')
-        .child(currentListName)
-        .child('items')
-        .get();
+      final snapshot = await (await _dbService.getSessionRef())
+          .child('lists')
+          .child(_currentListName)
+          .child('items')
+          .get();
       if (snapshot.exists && snapshot.value != null) {
-        final List<dynamic> data = snapshot.value as List<dynamic>;
-        items = data.map((e) => Map<String, dynamic>.from(e)).toList();
+        final data = snapshot.value as List<dynamic>;
+        _items = data.map((e) => Map<String, dynamic>.from(e)).toList();
       } else {
-        items = [];
+        _items = [];
       }
     } else {
       final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getString('items_$currentListName');
+      final stored = prefs.getString('items_$_currentListName');
       if (stored != null) {
-        final List<dynamic> data = jsonDecode(stored);
-        items = data.map((e) => Map<String, dynamic>.from(e)).toList();
+        final data = jsonDecode(stored) as List<dynamic>;
+        _items = data.map((e) => Map<String, dynamic>.from(e)).toList();
       } else {
-        items = [];
+        _items = [];
       }
     }
     setState(() {});
@@ -75,9 +82,8 @@ class _ItemSheetState extends State<ItemSheet> {
 
   void _updateQuantity(int index, int delta) {
     setState(() {
-      final current = items[index]['quantity'] as int;
-      final newQty = current + delta;
-      items[index]['quantity'] = newQty < 0 ? 0 : (newQty > 999 ? 999 : newQty);
+      final current = _items[index]['quantity'] as int;
+      _items[index]['quantity'] = (current + delta).clamp(0, 999);
     });
     _saveItems();
   }
@@ -85,20 +91,20 @@ class _ItemSheetState extends State<ItemSheet> {
   void _addItem() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? Theme.of(context).canvasColor,
+      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ??
+          Theme.of(context).canvasColor,
       isScrollControlled: true,
       builder: (_) => AddItemPopup(onSubmit: (name, qty) {
-        items.add({'name': name, 'quantity': qty});
+        setState(() => _items.add({'name': name, 'quantity': qty}));
         _saveItems();
-        setState(() {});
       }),
     );
   }
 
   void _deleteItem(int index) {
     setState(() {
-      items.removeAt(index);
-      confirmDeletion.remove(index);
+      _items.removeAt(index);
+      _pendingDeletion.remove(index);
     });
     _saveItems();
   }
@@ -128,16 +134,16 @@ class _ItemSheetState extends State<ItemSheet> {
                   backgroundColor: bgColor,
                   isScrollControlled: true,
                   builder: (_) => ListEditPopup(
-                    currentListName: currentListName,
+                    currentListName: _currentListName,
                     onRename: (newName) {
                       widget.onRename(newName);
-                      currentListName = newName;
+                      _currentListName = newName;
                       _saveItems();
                       setState(() {});
                     },
                     onDelete: () {
                       widget.onDelete();
-                      items.clear();
+                      _items.clear();
                       setState(() {});
                     },
                   ),
@@ -152,17 +158,21 @@ class _ItemSheetState extends State<ItemSheet> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              '\n   $currentListName',
-              style: openSansStyle(fontSize: 20, color: textColor, fontWeight: FontWeight.w600),
+              '\n   $_currentListName',
+              style: openSansStyle(
+                fontSize: 20,
+                color: textColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(height: 10),
           Expanded(
             child: ListView.builder(
               controller: widget.scrollController,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
+              itemCount: _items.length,
+              itemBuilder: (_, i) {
+                final item = _items[i];
                 return Column(
                   children: [
                     ListTile(
@@ -173,33 +183,32 @@ class _ItemSheetState extends State<ItemSheet> {
                         children: [
                           IconButton(
                             icon: Icon(Icons.remove, color: iconColor, size: 14),
-                            onPressed: () => _updateQuantity(index, -1),
+                            onPressed: () => _updateQuantity(i, -1),
                           ),
                           IconButton(
                             icon: Icon(Icons.add, color: iconColor, size: 14),
-                            onPressed: () => _updateQuantity(index, 1),
+                            onPressed: () => _updateQuantity(i, 1),
                           ),
-                          confirmDeletion.contains(index)
-                              ? IconButton(
-                                  icon: Icon(Icons.close, color: theme.colorScheme.error, size: 14),
-                                  onPressed: () => _deleteItem(index),
-                                )
-                              : IconButton(
-                                  icon: Icon(Icons.delete, color: iconColor, size: 14),
-                                  onPressed: () {
-                                    setState(() => confirmDeletion.add(index));
-                                  },
-                                ),
+                          if (_pendingDeletion.contains(i))
+                            IconButton(
+                              icon: Icon(Icons.close, color: Colors.red, size: 14),
+                              onPressed: () => _deleteItem(i),
+                            )
+                          else
+                            IconButton(
+                              icon: Icon(Icons.delete, color: iconColor, size: 14),
+                              onPressed: () => setState(() => _pendingDeletion.add(i)),
+                            ),
                         ],
                       ),
                     ),
-                    Divider(thickness: 0.8, indent: 20, endIndent: 20),
+                    const Divider(thickness: 0.8, indent: 20, endIndent: 20),
                   ],
                 );
               },
             ),
           ),
-          Divider(),
+          const Divider(),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: TextButton(

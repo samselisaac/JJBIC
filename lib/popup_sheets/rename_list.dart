@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../utilities.dart';
+import 'package:inventorymanagement/utilities.dart';
 
 class RenameListPopup extends StatefulWidget {
   final String currentName;
-  final void Function(String) onRename;
-  const RenameListPopup({Key? key, required this.currentName, required this.onRename}) : super(key: key);
+  final void Function(String name) onRename;
+  const RenameListPopup({super.key, required this.currentName, required this.onRename});
 
   @override
   State<RenameListPopup> createState() => _RenameListPopupState();
 }
 
 class _RenameListPopupState extends State<RenameListPopup> {
-  late TextEditingController _controller;
+  late final TextEditingController _controller;
 
   @override
   void initState() {
@@ -20,9 +20,15 @@ class _RenameListPopupState extends State<RenameListPopup> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final bgColor = theme.bottomSheetTheme.backgroundColor ?? theme.canvasColor;
     final txtColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
     final hintColor = theme.hintColor;
@@ -30,7 +36,7 @@ class _RenameListPopupState extends State<RenameListPopup> {
     final btnColor = theme.colorScheme.primary;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 24, 16, bottom + 24),
+      padding: EdgeInsets.fromLTRB(16, 24, 16, bottomInset + 24),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -39,7 +45,10 @@ class _RenameListPopupState extends State<RenameListPopup> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Rename List', style: openSansStyle(fontSize: 22, color: txtColor, fontWeight: FontWeight.bold)),
+          Text(
+            'Rename List',
+            style: openSansStyle(fontSize: 22, color: txtColor, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
@@ -64,7 +73,10 @@ class _RenameListPopupState extends State<RenameListPopup> {
                   Navigator.pop(context);
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: btnColor, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: btnColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
               child: Text('Rename', style: openSansStyle(color: txtColor)),
             ),
           ),

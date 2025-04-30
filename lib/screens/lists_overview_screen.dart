@@ -1,70 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utilities.dart';
-import '../popup_sheets/add_list.dart';
-import '../popup_sheets/settings.dart';
-import 'list_screen.dart';
 import 'package:inventorymanagement/services/auth_service.dart';
 import 'package:inventorymanagement/services/database_service.dart';
 
-class ListScreen extends StatefulWidget {
-  const ListScreen({super.key});
+import 'package:inventorymanagement/utilities.dart';
+import 'package:inventorymanagement/popup_sheets/add_list.dart';
+import 'package:inventorymanagement/popup_sheets/settings.dart';
+import 'package:inventorymanagement/screens/list_screen.dart';
+
+class ListsOverviewScreen extends StatefulWidget {
+  const ListsOverviewScreen({super.key});
+
   @override
-  ListScreenState createState() => ListScreenState();
+  State<ListsOverviewScreen> createState() => _ListsOverviewScreenState();
 }
 
-class ListScreenState extends State<ListScreen> {
-  List<String> lists = [];
-  final _auth = AuthService();
-  final _db = DatabaseService();
+class _ListsOverviewScreenState extends State<ListsOverviewScreen> {
+  List<String> _lists = [];
+  final AuthService _authService = AuthService();
+  final DatabaseService _dbService = DatabaseService();
 
   @override
   void initState() {
     super.initState();
-    _auth.authStateChanges().listen((_) => _loadLists());
+    _authService.authStateChanges().listen((_) => _loadLists());
     _loadLists();
   }
 
   Future<void> _saveLists() async {
-    final user = _auth.getCurrentUser();
+    final user = _authService.getCurrentUser();
     if (user != null) {
-      final ref = await _db.getSessionRef();
-      await ref.child('lists').set(lists);
+      final ref = await _dbService.getSessionRef();
+      await ref.child('lists').set(_lists);
     } else {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('inventory_lists', lists);
+      await prefs.setStringList('inventory_lists', _lists);
     }
   }
 
   Future<void> _loadLists() async {
-    final user = _auth.getCurrentUser();
+    final user = _authService.getCurrentUser();
     if (user != null) {
-      final ref = await _db.getSessionRef();
-      final snap = await ref.child('lists').get();
-      if (snap.exists && snap.value != null) {
-        final val = snap.value;
-        if (val is List) {
-          lists = val.map((e) => e.toString()).toList();
-        } else if (val is Map) {
-          lists = val.values.whereType<String>().toList();
+      final ref = await _dbService.getSessionRef();
+      final snapshot = await ref.child('lists').get();
+      final value = snapshot.value;
+      if (snapshot.exists && value != null) {
+        if (value is List) {
+          _lists = value.map((e) => e.toString()).toList();
+        } else if (value is Map) {
+          _lists = value.values.whereType<String>().toList();
         }
       } else {
-        lists = [];
+        _lists = [];
       }
     } else {
       final prefs = await SharedPreferences.getInstance();
-      lists = prefs.getStringList('inventory_lists') ?? [];
+      _lists = prefs.getStringList('inventory_lists') ?? [];
     }
     setState(() {});
   }
 
-  void _createNewList() {
+  void _addNewList() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? Theme.of(context).canvasColor,
+      backgroundColor:
+          Theme.of(context).bottomSheetTheme.backgroundColor ??
+              Theme.of(context).canvasColor,
       isScrollControlled: true,
       builder: (_) => AddListPopup(onSubmit: (name) {
-        setState(() => lists.add(name));
+        setState(() => _lists.add(name));
         _saveLists();
       }),
     );
@@ -73,9 +77,13 @@ class ListScreenState extends State<ListScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final bgColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
-    final iconColor = theme.appBarTheme.iconTheme?.color ?? theme.iconTheme.color;
+    final textColor =
+        theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final bgColor =
+        theme.appBarTheme.backgroundColor ?? theme.primaryColor;
+    final iconColor =
+        theme.appBarTheme.iconTheme?.color ?? theme.iconTheme.color;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -93,39 +101,45 @@ class ListScreenState extends State<ListScreen> {
             icon: Icon(Icons.more_vert, color: iconColor),
             onPressed: () => showModalBottomSheet(
               context: context,
-              backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? theme.canvasColor,
+              backgroundColor:
+                  theme.bottomSheetTheme.backgroundColor ??
+                      theme.canvasColor,
               isScrollControlled: true,
               builder: (_) => const SettingsPopup(),
             ),
-          )
+          ),
         ],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           childAspectRatio: 1,
         ),
-        itemCount: lists.length + 1,
-        itemBuilder: (ctx, idx) {
-          if (idx == lists.length) {
+        itemCount: _lists.length + 1,
+        itemBuilder: (_, idx) {
+          if (idx == _lists.length) {
             return GestureDetector(
-              onTap: _createNewList,
+              onTap: _addNewList,
               child: Card(
                 elevation: 0,
                 color: theme.colorScheme.primary,
-                child: const Center(child: Icon(Icons.add, color: Colors.white, size: 30)),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.white, size: 30),
+                ),
               ),
             );
           }
+          final name = _lists[idx];
           return Card(
             elevation: 0,
             color: theme.cardColor,
             child: ListTile(
               title: Text(
-                lists[idx],
+                name,
                 style: openSansStyle(
                   color: textColor,
                   fontSize: 16,
@@ -134,15 +148,25 @@ class ListScreenState extends State<ListScreen> {
               ),
               onTap: () => showModalBottomSheet(
                 context: context,
-                backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ?? theme.canvasColor,
+                backgroundColor:
+                    theme.bottomSheetTheme.backgroundColor ??
+                        theme.canvasColor,
                 isScrollControlled: true,
                 builder: (_) => DraggableScrollableSheet(
                   expand: false,
                   initialChildSize: 0.95,
                   builder: (_, ctrl) => ItemSheet(
-                    listName: lists[idx], scrollController: ctrl,
-                    onRename: (n) { setState(() => lists[idx] = n); _saveLists(); },
-                    onDelete: () { setState(() { lists.removeAt(idx); }); _saveLists(); Navigator.pop(context); },
+                    listName: name,
+                    scrollController: ctrl,
+                    onRename: (newName) {
+                      setState(() => _lists[idx] = newName);
+                      _saveLists();
+                    },
+                    onDelete: () {
+                      setState(() => _lists.removeAt(idx));
+                      _saveLists();
+                      Navigator.pop(context);
+                    },
                   ),
                 ),
               ),
