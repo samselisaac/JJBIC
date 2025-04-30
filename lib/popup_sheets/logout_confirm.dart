@@ -40,7 +40,6 @@ class LogoutConfirmPopup extends StatelessWidget {
                 onPressed: () {
                   onConfirm();
                   Navigator.pop(context);
-                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text('Log Out', style: openSansStyle(color: txtColor)),

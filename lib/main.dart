@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'screens/lists_overview_screen.dart';
 
@@ -9,6 +9,9 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final isDark = prefs.getBool('isDarkMode') ?? true;
+  themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -58,8 +61,7 @@ ThemeData _lightTheme() => ThemeData(
       bottomSheetTheme:
           const BottomSheetThemeData(backgroundColor: Colors.white),
       dialogTheme: const DialogTheme(backgroundColor: Colors.white),
-      textTheme:
-          const TextTheme(bodyMedium: TextStyle(color: Colors.black)),
+      textTheme: const TextTheme(bodyMedium: TextStyle(color: Colors.black)),
       cardTheme: const CardTheme(elevation: 0),
     );
 
@@ -89,8 +91,7 @@ ThemeData _darkTheme() => ThemeData(
           const BottomSheetThemeData(backgroundColor: Color(0xFF242424)),
       dialogTheme:
           const DialogTheme(backgroundColor: Color(0xFF242424)),
-      textTheme:
-          const TextTheme(bodyMedium: TextStyle(color: Colors.white)),
+      textTheme: const TextTheme(bodyMedium: TextStyle(color: Colors.white)),
       cardColor: const Color(0xFF2D2D2D),
       cardTheme: const CardTheme(
         color: Color(0xFF2D2D2D),
