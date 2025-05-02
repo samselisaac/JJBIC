@@ -60,12 +60,21 @@ class _ListsOverviewScreenState extends State<ListsOverviewScreen> {
     setState(() {});
   }
 
+  void _openSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ??
+          Theme.of(context).canvasColor,
+      isScrollControlled: true,
+      builder: (_) => const SettingsPopup(),
+    );
+  }
+
   void _addNewList() {
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          Theme.of(context).bottomSheetTheme.backgroundColor ??
-              Theme.of(context).canvasColor,
+      backgroundColor: Theme.of(context).bottomSheetTheme.backgroundColor ??
+          Theme.of(context).canvasColor,
       isScrollControlled: true,
       builder: (_) => AddListPopup(onSubmit: (name) {
         setState(() => _lists.add(name));
@@ -77,15 +86,16 @@ class _ListsOverviewScreenState extends State<ListsOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textColor =
-        theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final bgColor =
-        theme.appBarTheme.backgroundColor ?? theme.primaryColor;
-    final iconColor =
-        theme.appBarTheme.iconTheme?.color ?? theme.iconTheme.color;
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final bgColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
+    final iconColor = theme.appBarTheme.iconTheme?.color ?? theme.iconTheme.color;
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.more_vert, color: iconColor),
+          onPressed: _openSettings,
+        ),
         title: Text(
           'Your Lists',
           style: openSansStyle(
@@ -96,24 +106,10 @@ class _ListsOverviewScreenState extends State<ListsOverviewScreen> {
         ),
         backgroundColor: bgColor,
         iconTheme: theme.appBarTheme.iconTheme?.copyWith(color: iconColor),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert, color: iconColor),
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              backgroundColor:
-                  theme.bottomSheetTheme.backgroundColor ??
-                      theme.canvasColor,
-              isScrollControlled: true,
-              builder: (_) => const SettingsPopup(),
-            ),
-          ),
-        ],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
@@ -128,7 +124,7 @@ class _ListsOverviewScreenState extends State<ListsOverviewScreen> {
                 elevation: 0,
                 color: theme.colorScheme.primary,
                 child: const Center(
-                  child: Icon(Icons.add, color: Colors.white, size: 30),
+                  child: Icon(Icons.add, size: 30, color: Colors.white),
                 ),
               ),
             );
@@ -148,9 +144,8 @@ class _ListsOverviewScreenState extends State<ListsOverviewScreen> {
               ),
               onTap: () => showModalBottomSheet(
                 context: context,
-                backgroundColor:
-                    theme.bottomSheetTheme.backgroundColor ??
-                        theme.canvasColor,
+                backgroundColor: theme.bottomSheetTheme.backgroundColor ??
+                    theme.canvasColor,
                 isScrollControlled: true,
                 builder: (_) => DraggableScrollableSheet(
                   expand: false,
