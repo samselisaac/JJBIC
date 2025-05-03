@@ -1,0 +1,7 @@
+<resources>
+  <!-- Old -->
+  <!-- <string name="app_name">InventoryManagement</string> -->
+
+  <!-- New -->
+  <string name="app_name">InPantry</string>
+</resources>
