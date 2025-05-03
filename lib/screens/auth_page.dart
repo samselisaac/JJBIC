@@ -1,3 +1,5 @@
+// auth_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:inventorymanagement/services/auth_service.dart';
 import 'package:inventorymanagement/utilities.dart';
@@ -39,6 +41,20 @@ class _AuthPopupState extends State<AuthPopup> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() => _error = "Please enter your email to reset password.");
+      return;
+    }
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      setState(() => _error = "Password reset email sent!");
+    } catch (e) {
       setState(() => _error = e.toString());
     }
   }
@@ -105,6 +121,22 @@ class _AuthPopupState extends State<AuthPopup> {
               ),
               style: openSansStyle(color: textColor),
             ),
+
+            // ─── Forgot Password Button ───────────────────────────────
+            if (_isSignIn) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _forgotPassword,
+                  child: Text(
+                    'Forgot password?',
+                    style: openSansStyle(color: primaryColor, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+
             if (!_isSignIn) ...[
               const SizedBox(height: 16),
               TextField(
